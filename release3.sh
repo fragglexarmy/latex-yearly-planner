@@ -1,5 +1,17 @@
 ]set -eo pipefail
 
+# Guidance
+
+# mkLine - Makes it lined
+# mkSun - Starts week on a Sunday
+# mkAMPM - Add AM and PM wording to hours of day on daily pages
+# if configuration is dailycal then there is a calendar for the curent month on the daily calendar
+# **** Add option to have two page weekly spread and comment here on that
+# **** Cover here later for variation with a single or two page month spread once coded
+# Put in menu to choose options on execution
+
+# Set years to apply
+
 CURRENT_YEAR=$(date +"%Y")
 NEXT_YEAR=$((CURRENT_YEAR+1))
 
