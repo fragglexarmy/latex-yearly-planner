@@ -24,6 +24,8 @@
 \usepackage{adjustbox}
 \usepackage{multido}
 
+# removed deprecated hidelinks=true value
+
 \hypersetup{
     {{- if not .Cfg.Debug.ShowLinks}}hidelinks{{end -}}
 }
