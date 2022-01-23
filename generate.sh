@@ -1,0 +1,166 @@
+set -eo pipefail
+
+# Guidance
+
+# mkLine - Makes it lined
+# mkSun - Starts week on a Sunday
+# mkAMPM - Add AM and PM wording to hours of day on daily pages
+# if configuration is dailycal then there is a calendar for the curent month on the daily calendar
+# **** Add option to have two page weekly spread and comment here on that
+# **** Cover here later for variation with a single or two page month spread once coded
+# Put in menu to choose options on execution
+
+# Set years to apply
+
+clear
+echo "Do you want this year or another year?"
+echo "Current(C), Other(O) or Exit(E)"
+
+readSuccessVar="false"
+
+# read the year choice
+
+while [ "$readSuccessVar" = "false" ]
+do
+	read yearTypeChoiceVar
+
+	case $yearTypeChoiceVar in
+
+	[Cc] | [Cc]urrent)
+		clear
+		echo "Current year chosen"
+		readSuccessVar="true"
+		CURRENT_YEAR=$(date +"%Y")
+		NEXT_YEAR=$((CURRENT_YEAR+1))
+	;;
+
+	[Oo] | [Oo]ther)
+		clear
+		echo "Other year chosen"
+		readSuccessVar="true"
+		read -n 4 yearChosenVar
+		while [ $yearChosenVar -gt 2100 ] || [ $yearChosenVar -lt 2000 ]
+		do
+			echo "Choose a year between 2000 and 2100"
+			read -n 4 yearChosenVar
+		done
+		CURRENT_YEAR=$yearChosenVar
+	;;
+
+	[Ee] | [Ee]xit)
+		clear
+		echo "Exiting"
+		exit 0
+	;;
+
+	esac
+done
+
+clear
+echo -e "Chosen year\n-----------\n$CURRENT_YEAR"
+read -n 1 
+
+
+
+_configurations=(
+  1 "cfg/base.yaml,cfg/template_breadcrumb.yaml,cfg/sn_a5x.breadcrumb.default.yaml"                                             "sn_a5x.breadcrumb.default"
+  1 "cfg/base.yaml,cfg/template_breadcrumb.yaml,cfg/sn_a5x.breadcrumb.default.yaml,cfg/sn_a5x.breadcrumb.default.dailycal.yaml" "sn_a5x.breadcrumb.default.dailycal"
+  2 "cfg/base.yaml,cfg/template_months_on_side.yaml,cfg/sn_a5x.mos.default.yaml"                                                "sn_a5x.mos.default"
+  2 "cfg/base.yaml,cfg/template_months_on_side.yaml,cfg/sn_a5x.mos.default.yaml,cfg/sn_a5x.mos.default.dailycal.yaml"           "sn_a5x.mos.default.dailycal"
+
+#  1 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/template_breadcrumb.yaml,cfg/rm2.breadcrumb.default.yaml"                                          "rm2.breadcrumb.default"
+#  1 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/template_breadcrumb.yaml,cfg/rm2.breadcrumb.default.yaml,cfg/rm2.breadcrumb.default.dailycal.yaml" "rm2.breadcrumb.default.dailycal"
+#  2 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/template_months_on_side.yaml,cfg/rm2.mos.default.yaml"                                             "rm2.mos.default"
+#  2 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/template_months_on_side.yaml,cfg/rm2.mos.default.yaml,cfg/rm2.mos.default.dailycal.yaml"           "rm2.mos.default.dailycal"
+
+#  1 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk.base.yaml,cfg/template_breadcrumb.yaml,cfg/rm2.breadcrumb.default.yaml"          "rm2_ddvk.breadcrumb.default"
+#  1 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk.base.yaml,cfg/template_breadcrumb.yaml,cfg/rm2.breadcrumb.default.dailycal.yaml" "rm2_ddvk.breadcrumb.default.dailycal"
+#  2 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk.base.yaml,cfg/template_months_on_side.yaml,cfg/rm2.mos.default.yaml"             "rm2_ddvk.mos.default"
+#  2 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk.base.yaml,cfg/template_months_on_side.yaml,cfg/rm2.mos.default.dailycal.yaml"    "rm2_ddvk.mos.default.dailycal"
+
+#  1 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk_lh.base.yaml,cfg/template_breadcrumb.yaml,cfg/rm2.breadcrumb.default.yaml"          "rm2_ddvk_lh.breadcrumb.default"
+#  1 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk_lh.base.yaml,cfg/template_breadcrumb.yaml,cfg/rm2.breadcrumb.default.dailycal.yaml" "rm2_ddvk_lh.breadcrumb.default.dailycal"
+#  2 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk_lh.base.yaml,cfg/template_months_on_side.yaml,cfg/rm2.mos.default.yaml"             "rm2_ddvk_lh.mos.default"
+#  2 "cfg/base.yaml,cfg/rm2.base.yaml,cfg/rm2_ddvk_lh.base.yaml,cfg/template_months_on_side.yaml,cfg/rm2.mos.default.dailycal.yaml"    "rm2_ddvk_lh.mos.default.dailycal"
+)
+
+_configurations_len=${#_configurations[@]}
+
+function createPDFs() {
+  for _year in $CURRENT_YEAR $NEXT_YEAR; do
+    for _idx in $(seq 0 3 $((_configurations_len-1))); do
+      _passes=${_configurations[_idx]}
+      _cfg=${_configurations[_idx+1]}
+      _name=${_configurations[_idx+2]}
+
+      PLANNER_YEAR="${_year}" PASSES="${_passes}" CFG="${_cfg}" NAME="${_name}.${_year}" ./single.sh
+    done
+  done
+}
+
+function mvDefaultTo() {
+  for filename in ./*pdf; do
+    _newname=$(echo "$filename" | perl -pe "s/default/$1/g")
+    mv "$filename" "$_newname"
+  done
+}
+
+function _mkLine() {
+  sed -i 's/dotted: true/dotted: false/' cfg/base.yaml
+}
+
+function _mkSun() {
+  sed -i 's/weekstart: 1/weekstart: 0/' cfg/base.yaml
+}
+
+function _mkAMPM() {
+  sed -i 's/ampmtime: false/ampmtime: true/' cfg/base.yaml
+}
+
+function _restore() {
+  git restore cfg/base.yaml
+  echo "tried to restore base default"
+  read -n 1 -s
+}
+
+_combinations=(
+  ""                        "dotted.default"
+  "_mkLine"                 "lined.default"
+  "_mkSun"                  "dotted.default.sun"
+  "_mkLine _mkSun"          "lined.default.sun"
+  "_mkAMPM"                 "dotted.default.ampm"
+  "_mkAMPM _mkLine"         "lined.default.ampm"
+  "_mkAMPM _mkSun"          "dotted.default.ampm.sun"
+  "_mkLine _mkAMPM _mkSun"  "lined.default.ampm.sun"
+)
+
+_combinations_len=${#_combinations[@]}
+
+for _idx in $(seq 0 2 $((_combinations_len-1))); do
+  _cmds=${_combinations[_idx]}
+  _mvTo=${_combinations[_idx+1]}
+
+  echo "Starting loop"
+  echo "-------------"
+  echo "Combinations length of arrary ${_combinations_len}"
+  echo "Combinations values ${_combinations[*]}"
+  echo "Cmds ${_cmds}"
+  echo "Move to ${_mvTo}"
+  echo "-------------"
+  echo "Beginning to run commands to create variations dotted/lined/starting sun etc - Just alters variables in base yaml file"
+  read -n 1 -s
+
+  for _cmd in ${_cmds}; do
+    ${_cmd}
+    echo "Running cmd " + ${_cmd}
+    read -n 1 -s
+  done
+
+  echo "Run loops to create combinations and variations"
+  read -n 1 -s
+  createPDFs
+  mvDefaultTo "${_mvTo}"
+  mv ./*pdf ./destination/
+
+  _restore
+done
